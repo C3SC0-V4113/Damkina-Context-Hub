@@ -12,7 +12,8 @@ tags:
   - dominio
   - ux
   - ia-contexto
-relacionados: []
+relacionados:
+  - 01-contextos/producto/2026-03-29-plan-mvp-damkina.md
 reemplaza: []
 reemplazado_por: []
 ---
