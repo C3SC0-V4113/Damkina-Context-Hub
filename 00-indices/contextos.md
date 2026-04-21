@@ -4,7 +4,7 @@ Inventario manual de documentos del repositorio.
 
 | ID | Título | Tipo | Estado | Tags | Ruta |
 | --- | --- | --- | --- | --- | --- |
-| Pendiente | Agregar primer contexto | contexto | borrador | `ia-contexto` | Pendiente |
+| CTX-20260309-definicion-negocio-damkina | Definición de negocio de Damkina | contexto | vigente | `producto`, `dominio`, `ux`, `ia-contexto` | `01-contextos/producto/2026-03-09-definicion-negocio-damkina.md` |
 
 ## Instrucciones
 
