@@ -18,6 +18,8 @@ Este repositorio es la memoria documental de Damkina. Antes de responder, diseñ
 - Antes de proponer arquitectura, revisa `01-contextos/decisiones/`.
 - Antes de proponer backend, revisa `01-contextos/backend/` y ADRs relacionados.
 - Antes de proponer cambios Flutter, revisa `01-contextos/frontend-flutter/`.
+- Para frontend Flutter, revisa el ADR aceptado `01-contextos/decisiones/0001-arquitectura-frontend-flutter-mvvm-riverpod.md` antes de modificar arquitectura, navegación, estado o estructura.
+- Al trabajar con IA en frontend, usa cambios pequeños, revisa cada diff con criterio humano y evita vibecoding.
 - Si una propuesta contradice una decisión aceptada, adviértelo antes de continuar.
 - Si una decisión aceptada debe cambiar, sugiere crear un nuevo ADR y marcar el anterior como `superseded`.
 - Si falta información importante, sugiere crear un documento desde `99-plantillas/`.

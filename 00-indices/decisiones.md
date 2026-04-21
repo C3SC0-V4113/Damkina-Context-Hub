@@ -4,7 +4,7 @@ Registro manual de decisiones significativas.
 
 | ADR | Título | Estado | Fecha | Tags | Reemplazado Por | Ruta |
 | --- | --- | --- | --- | --- | --- | --- |
-| Pendiente | Agregar primera decisión ADR | propuesto | Pendiente | `arquitectura` | N/A | Pendiente |
+| ADR-0001 | Arquitectura frontend Flutter MVVM + Riverpod | aceptado | 2026-04-21 | `frontend`, `flutter`, `arquitectura`, `ux` | N/A | `01-contextos/decisiones/0001-arquitectura-frontend-flutter-mvvm-riverpod.md` |
 
 ## Estados Esperados
 
