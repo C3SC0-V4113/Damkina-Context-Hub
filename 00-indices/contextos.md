@@ -1,4 +1,4 @@
-﻿# Indice General De Contextos
+# Indice General De Contextos
 
 Inventario manual de documentos del repositorio.
 
@@ -13,6 +13,8 @@ Inventario manual de documentos del repositorio.
 | CTX-20260421-contexto-frontend-flutter-mvp | Contexto frontend Flutter MVP | contexto | vigente | `frontend`, `flutter`, `arquitectura`, `ux`, `ia-contexto` | `01-contextos/frontend-flutter/2026-04-21-contexto-frontend-flutter-mvp.md` |
 | REF-20260421-diseno-figma-mobile | Diseno Figma mobile | referencia | vigente | `frontend`, `flutter`, `ux`, `producto`, `ia-contexto` | `05-referencias/referencia-diseno-figma-mobile.md` |
 | ADR-0002-mapbox-como-proveedor-mapas-flutter-mvp | Mapbox como proveedor de mapas en Flutter MVP | decision | aceptado | `frontend`, `flutter`, `mapas`, `mapbox`, `arquitectura`, `ia-contexto` | `01-contextos/decisiones/0002-mapbox-como-proveedor-mapas-flutter-mvp.md` |
+| CTX-20260426-backend-supabase-mvp | Contexto backend Supabase MVP | contexto | vigente | `backend`, `supabase`, `database`, `api`, `auth`, `edge-functions` | `01-contextos/backend/2026-04-26-contexto-backend-supabase-mvp.md` |
+| ADR-0003-supabase-como-backend-mvp | Supabase como backend MVP | decision | aceptado | `backend`, `supabase`, `api`, `database`, `arquitectura`, `auth` | `01-contextos/decisiones/0003-supabase-como-backend-mvp.md` |
 
 ## Instrucciones
 
