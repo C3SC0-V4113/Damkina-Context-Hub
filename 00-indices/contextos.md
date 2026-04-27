@@ -15,6 +15,7 @@ Inventario manual de documentos del repositorio.
 | ADR-0002-mapbox-como-proveedor-mapas-flutter-mvp | Mapbox como proveedor de mapas en Flutter MVP | decision | aceptado | `frontend`, `flutter`, `mapas`, `mapbox`, `arquitectura`, `ia-contexto` | `01-contextos/decisiones/0002-mapbox-como-proveedor-mapas-flutter-mvp.md` |
 | CTX-20260426-backend-supabase-mvp | Contexto backend Supabase MVP | contexto | vigente | `backend`, `supabase`, `database`, `api`, `auth`, `edge-functions`, `storage` | `01-contextos/backend/2026-04-26-contexto-backend-supabase-mvp.md` |
 | ADR-0003-supabase-como-backend-mvp | Supabase como backend MVP | decision | aceptado | `backend`, `supabase`, `api`, `database`, `arquitectura`, `auth` | `01-contextos/decisiones/0003-supabase-como-backend-mvp.md` |
+| ADR-0004-mapbox-geocoding-elevacion-preview-picker-mvp | Mapbox geocoding y elevacion como preview en picker MVP | decision | aceptado | `frontend`, `flutter`, `mapbox`, `geocoding`, `elevacion`, `arquitectura`, `ia-contexto` | `01-contextos/decisiones/0004-mapbox-geocoding-elevacion-preview-picker-mvp.md` |
 
 ## Instrucciones
 

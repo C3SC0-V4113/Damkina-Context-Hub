@@ -15,6 +15,7 @@ tags:
   - ia-contexto
 relacionados:
   - 01-contextos/decisiones/0001-arquitectura-frontend-flutter-mvvm-riverpod.md
+  - 01-contextos/decisiones/0004-mapbox-geocoding-elevacion-preview-picker-mvp.md
   - 01-contextos/frontend-flutter/2026-04-21-contexto-frontend-flutter-mvp.md
   - 02-flujos/flujo-ingreso-inicial-mvp.md
   - 02-flujos/flujo-agregar-ubicacion-mvp.md
@@ -69,7 +70,7 @@ con las siguientes reglas:
 
 - Se incorpora dependencia externa de mapas y configuracion de token.
 - Se agrega manejo de permisos de ubicacion en Android/iOS.
-- Geocoding y enriquecimiento ambiental siguen pendientes de decision posterior.
+- El enriquecimiento ambiental canonico sigue pendiente de decisiones y contratos adicionales.
 
 ## Criterios De Aceptacion
 
@@ -88,8 +89,10 @@ con las siguientes reglas:
 
 ## Notas De Implementacion
 
-Esta decision cubre solo seleccion de ubicacion en mapa. No cubre aun
-geocoding, perfil ambiental real, ni proveedor definitivo de datos climaticos.
+Esta decision cubre la seleccion de ubicacion en mapa. El geocoding y la
+elevacion de preview UX para picker se formalizan en ADR-0004. El perfil
+ambiental real y el proveedor definitivo de datos climaticos permanecen fuera
+de este ADR.
 
 ## Historial
 

@@ -7,6 +7,7 @@ Registro manual de decisiones significativas.
 | ADR-0001 | Arquitectura frontend Flutter MVVM + Riverpod | aceptado | 2026-04-21 | `frontend`, `flutter`, `arquitectura`, `ux` | N/A | `01-contextos/decisiones/0001-arquitectura-frontend-flutter-mvvm-riverpod.md` |
 | ADR-0002 | Mapbox como proveedor de mapas Flutter MVP | aceptado | 2026-04-24 | `frontend`, `flutter`, `mapas`, `mapbox`, `arquitectura` | N/A | `01-contextos/decisiones/0002-mapbox-como-proveedor-mapas-flutter-mvp.md` |
 | ADR-0003 | Supabase como backend MVP | aceptado | 2026-04-26 | `backend`, `supabase`, `api`, `database`, `arquitectura`, `auth` | N/A | `01-contextos/decisiones/0003-supabase-como-backend-mvp.md` |
+| ADR-0004 | Mapbox geocoding y elevacion como preview en picker MVP | aceptado | 2026-04-27 | `frontend`, `flutter`, `mapbox`, `geocoding`, `elevacion`, `arquitectura` | N/A | `01-contextos/decisiones/0004-mapbox-geocoding-elevacion-preview-picker-mvp.md` |
 
 ## Estados Esperados
 

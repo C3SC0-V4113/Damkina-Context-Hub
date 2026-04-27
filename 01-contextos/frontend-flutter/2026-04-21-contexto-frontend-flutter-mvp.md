@@ -3,7 +3,7 @@ id: CTX-20260421-contexto-frontend-flutter-mvp
 tipo: contexto
 estado: vigente
 fecha_creacion: 2026-04-21
-fecha_actualizacion: 2026-04-21
+fecha_actualizacion: 2026-04-27
 responsables:
   - Francisco Valle
 tags:
@@ -14,6 +14,10 @@ tags:
   - ia-contexto
 relacionados:
   - 01-contextos/decisiones/0001-arquitectura-frontend-flutter-mvvm-riverpod.md
+  - 01-contextos/decisiones/0002-mapbox-como-proveedor-mapas-flutter-mvp.md
+  - 01-contextos/decisiones/0003-supabase-como-backend-mvp.md
+  - 01-contextos/decisiones/0004-mapbox-geocoding-elevacion-preview-picker-mvp.md
+  - 01-contextos/backend/2026-04-26-contexto-backend-supabase-mvp.md
   - 01-contextos/producto/2026-03-29-plan-mvp-damkina.md
   - 02-flujos/flujo-ingreso-inicial-mvp.md
   - 02-flujos/flujo-agregar-ubicacion-mvp.md
@@ -42,8 +46,8 @@ Resumen operativo:
 - `AsyncValue` para estados `loading`, `error` y `data`.
 - `go_router` para navegación.
 - `Freezed` + `json_serializable` para modelos y DTOs.
-- Repositorios con fake/local data hasta cerrar backend y APIs.
-- Adapters para auth y mapas para evitar acoplamiento temprano.
+- Repositorios con fake/local data y migracion incremental a adapters reales.
+- Boundaries para auth, mapas y geodata preview para evitar acoplamiento temprano.
 
 ## Estructura Sugerida
 
@@ -178,12 +182,15 @@ La navegación con bottom navigation debe cubrir cultivos, ubicaciones y perfil.
 
 ## Datos Y Repositorios
 
-Mientras backend y APIs no estén cerrados:
+Con ADR-0002, ADR-0003 y ADR-0004 aceptados:
 
-- Usar fake/local data sources.
-- Mantener interfaces de repositorio desde el inicio.
-- No acoplar pantallas a Node.js, Firebase, Google Sign-In, Google Maps, Mapbox u OpenStreetMap.
-- Documentar cualquier cambio de proveedor como ADR si pasa a ser decisión aceptada.
+- Usar fake/local data sources como base y migrar por fases a adapters reales.
+- Mantener interfaces de repositorio y boundaries desde el inicio.
+- No acoplar pantallas a SDKs concretos; la UI consume boundaries de dominio/aplicacion.
+- `MapPicker` mantiene la seleccion de coordenadas.
+- `LocationSelectionMetadataResolver` maneja geocoding/elevacion de preview UX.
+- Auth y backend se implementan tras `AuthRepository` y repositorios por feature.
+- Documentar cualquier nuevo proveedor como ADR si pasa a ser decision aceptada.
 
 Interfaces conceptuales esperadas:
 
@@ -193,6 +200,7 @@ Interfaces conceptuales esperadas:
 - `CropRepository`
 - `RecommendationRepository`
 - `MapPicker`
+- `LocationSelectionMetadataResolver`
 
 ## Trabajo Con Agentes De IA
 
@@ -229,18 +237,22 @@ Estándar recomendado para MVP:
 
 Golden tests quedan fuera del estándar mínimo inicial porque el diseño mobile aún puede cambiar y no hay diseño tablet definido.
 
-## Vacíos O Decisiones Pendientes
+## Vacios O Decisiones Pendientes
 
-- Backend oficial y contrato API.
-- Proveedor real de autenticación Google.
-- Proveedor de mapas y geocoding.
-- Motor de recomendación real.
-- Fuente de imágenes de cultivos.
-- Tokens finales si Figma expone variables de diseño más adelante.
-- Diseño específico para tablets o tamaños intermedios.
+- Contratos detallados entre Flutter y Edge Functions (`get-crops`, `get-recommendations`).
+- Configuracion definitiva de Google Auth en Supabase.
+- Fuente canonica para geodata ambiental (Koppen/clima) mas alla del preview de picker.
+- Motor de recomendacion real.
+- Fuente de imagenes de cultivos.
+- Tokens finales si Figma expone variables de diseno mas adelante.
+- Diseno especifico para tablets o tamanos intermedios.
 
 ## Historial
 
 | Fecha | Cambio | Responsable |
 | --- | --- | --- |
 | 2026-04-21 | Definición inicial del contexto frontend Flutter MVP | Francisco Valle, Codex |
+| 2026-04-27 | Alineacion con ADR-0002, ADR-0003 y ADR-0004 | Francisco Valle, Codex |
+
+
+
