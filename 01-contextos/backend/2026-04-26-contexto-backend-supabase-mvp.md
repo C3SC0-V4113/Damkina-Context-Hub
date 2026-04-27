@@ -3,7 +3,7 @@ id: CTX-20260426-backend-supabase-mvp
 tipo: contexto
 estado: vigente
 fecha_creacion: 2026-04-26
-fecha_actualizacion: 2026-04-26
+fecha_actualizacion: 2026-04-27
 responsables:
   - Francisco Valle
   - David Ruano
@@ -14,6 +14,7 @@ tags:
   - api
   - auth
   - edge-functions
+  - storage
 relacionados:
   - 01-contextos/decisiones/0003-supabase-como-backend-mvp.md
   - 01-contextos/producto/2026-03-29-plan-mvp-damkina.md
@@ -26,17 +27,17 @@ reemplazado_por: []
 
 ## Resumen
 
-Este documento describe la implementación técnica del backend usando Supabase para el MVP de Damkina. Cubre schema de base de datos, autenticación, Edge Functions y configuración de seguridad.
+Este documento describe la implementación técnica del backend usando Supabase para el MVP de Damkina. Cubre schema de base de datos, autenticación, Edge Functions, Storage y configuración de seguridad.
 
 ## Alcance
 
-- Schema de tablas: profiles, locations, crops, recommendations.
-- Autenticación Google via Supabase Auth.
-- Edge Functions para motor de recomendaciones.
+- Schema de tablas: profiles, locations, location_environment_profiles, crops, crop_images, crop_koppen_preferences, crop_management_factors, location_crop_recommendations.
+- Storagebucket público para imágenes de cultivos.
+- Edge Functions: get-crops, get-recommendations.
 - RLS policies para seguridad.
-- Storage para imágenes de cultivos.
+- APIs externas (clima, geocoding, elevación) manejadas en Flutter.
 
-Queda fuera del alcance: APIs externas (geocoding, clima, elevación), que se manejan en Flutter.
+Queda fuera del alcance: Configuración de Google Auth (pendiente).
 
 ## Schema De Base De Datos
 
@@ -63,11 +64,31 @@ Ubicaciones guardadas por usuario.
 | name | TEXT | NOT NULL | Nombre (casa, parcela, etc) |
 | latitude | DECIMAL(10,7) | NOT NULL | Latitud |
 | longitude | DECIMAL(10,7) | NOT NULL | Longitud |
-| altitude | DECIMAL(7,2) | | Altitud en metros |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Fecha de creación |
+
+### Tabla: location_environment_profiles
+
+Perfil ambiental separado de la ubicación. Se crea automáticamente cuando Flutter guarda datos del clima.
+
+| Columna | Tipo | Restricciones | Descripción |
+| --- | --- | --- | --- |
+| id | UUID | PK | ID del perfil |
+| location_id | UUID | REFERENCES locations | Ubicación asociada |
+| altitude_m | DECIMAL(7,2) | | Altitud en metros |
 | koppen_classification | TEXT | | Clasificación Köppen |
 | climate_summary | JSONB | | Resumen climático |
 | seasonality_summary | JSONB | | Estacionalidad |
+| current_season | TEXT | | Temporada actual |
+| avg_temp_c | DECIMAL(5,2) | | Temperatura promedio °C |
+| temp_range_min_c | DECIMAL(5,2) | | Temp mínima del rango |
+| temp_range_max_c | DECIMAL(5,2) | | Temp máxima del rango |
+| annual_precip_mm | DECIMAL(7,2) | | Precipitación anual mm |
+| regional_humidity_pct | DECIMAL(5,2) | | Humedad regional % |
+| data_source | TEXT | | Fuente de datos |
+| profile_version | INT | DEFAULT 1 | Versión del perfil |
+| calculated_at | TIMESTAMPTZ | | Fecha de cálculo |
 | created_at | TIMESTAMPTZ | DEFAULT now() | Fecha de creación |
+| updated_at | TIMESTAMPTZ | DEFAULT now() | Fecha de actualización |
 
 ### Tabla: crops
 
@@ -89,50 +110,105 @@ Catálogo de cultivos. Público de lectura.
 | sun_hours_max | INT | | Horas máximas de sol |
 | sunlight_intensity | TEXT | | low, medium, high |
 | water_requirement | TEXT | | low, medium, high |
-| ideal_temp_min | DECIMAL(5,2) | | Temp mínima ideal °C |
-| ideal_temp_max | DECIMAL(5,2) | | Temp máxima ideal °C |
-| altitude_min | DECIMAL(7,2) | | Altitud mínima (m) |
-| altitude_max | DECIMAL(7,2) | | Altitud máxima (m) |
+| ideal_temp_min_c | DECIMAL(5,2) | | Temp mínima ideal °C |
+| ideal_temp_max_c | DECIMAL(5,2) | | Temp máxima ideal °C |
+| altitude_min_m | DECIMAL(7,2) | | Altitud mínima (m) |
+| altitude_max_m | DECIMAL(7,2) | | Altitud máxima (m) |
 | preferred_koppen_types | TEXT[] | | Tipos Köppen preferidos |
-| images | TEXT[] | | URLs de imágenes |
 | created_at | TIMESTAMPTZ | DEFAULT now() | Fecha de creación |
 
-### Tabla: recommendations
+### Tabla: crop_images
 
-Recomendaciones cacheadas por ubicación.
+Imágenes de cultivos. Se guardan en Supabase Storage.
 
 | Columna | Tipo | Restricciones | Descripción |
-| --- | --- | --- | --- |
+| --- | --- | --- |
+| id | UUID | PK | ID de imagen |
+| crop_id | UUID | REFERENCES crops | Cultivo asociado |
+| image_url | TEXT | NOT NULL | URL de la imagen |
+| alt_text | TEXT | | Texto alternativo |
+| sort_order | INT | DEFAULT 0 | Orden de display |
+| is_cover | BOOLEAN | DEFAULT false | Es imagen principal |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Fecha de creación |
+
+### Tabla: crop_koppen_preferences
+
+Preferencias de clasificación Köppen por cultivo.
+
+| Columna | Tipo | Restricciones | Descripción |
+| --- | --- | --- |
+| id | UUID | PK | ID |
+| crop_id | UUID | REFERENCES crops | Cultivo |
+| koppen_code | TEXT | NOT NULL | Código Köppen |
+| preference_weight | DECIMAL(3,2) | DEFAULT 1.00 | Peso de preferencia |
+
+### Tabla: crop_management_factors
+
+Factores modificables por cultivo (riego, suelo, sombra, etc).
+
+| Columna | Tipo | Restricciones | Descripción |
+| --- | --- | --- |
+| id | UUID | PK | ID |
+| crop_id | UUID | REFERENCES crops | Cultivo |
+| factor_key | TEXT | NOT NULL | Clave (ej: soil_ph) |
+| factor_label | TEXT | NOT NULL | Etiqueta (ej: pH del suelo) |
+| recommendation | TEXT | NOT NULL | Recomendación |
+| is_modifiable | BOOLEAN | DEFAULT true | Es modificable |
+| sort_order | INT | DEFAULT 0 | Orden |
+
+### Tabla: location_crop_recommendations
+
+Recomendaciones calculadas por ubicación.
+
+| Columna | Tipo | Restricciones | Descripción |
+| --- | --- | --- |
 | id | UUID | PK | ID de recomendación |
 | location_id | UUID | REFERENCES locations | Ubicación |
 | crop_id | UUID | REFERENCES crops | Cultivo |
 | user_id | UUID | REFERENCES auth.users | Propietario |
 | score | DECIMAL(5,2) | NOT NULL | Score 0-100 |
-| level | TEXT | NOT NULL | highly_recommended, recommended, possible, not_recommended |
-| explanation | TEXT | | | Explicación del score |
+| recommendation_level | TEXT | NOT NULL | highly_recommended, recommended, possible, not_recommended |
+| explanation | TEXT | | Explicación del score |
+| rank_position | INT | | Posición en el ranking |
 | created_at | TIMESTAMPTZ | DEFAULT now() | Fecha de creación |
+
+## Storage
+
+### Bucket: crops
+
+Bucket público para almacenar imágenes de cultivos.
+
+| Propiedad | Valor |
+| --- | --- |
+| ID | crops |
+| Nombre | crops |
+| Público | true (lectura por path, no listing) |
+| políticas | service_role: uploads / DELETE |
+
+URL base: `https://lzbnowumqugdgupxupur.supabase.co/storage/v1/object/public/crops/`
 
 ## Autenticación
 
-### Provider: Google
+### Provider: Google (pendiente)
 
 - Configurar en Supabase Dashboard → Authentication → Providers → Google.
 - Requiere credentials de Google Cloud Console.
-- Flujo: Flutter abre Google Sign-In → Supabase valida → JWT.
+- JWT Expiry: 3600 segundos (1 hora).
 
-### Trigger: Crear perfil automáticamente
-
-Al crear usuario en auth.users, crear registro en profiles:
+### Trigger: handle_new_user
 
 ```sql
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, display_name, avatar_url)
-  VALUES (NEW.id, NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'avatar_url');
+  IF NEW.raw_user_meta_data->>'name' IS NOT NULL THEN
+    INSERT INTO public.profiles (id, display_name, avatar_url)
+    VALUES (NEW.id, NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'avatar_url');
+  END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -141,134 +217,170 @@ CREATE TRIGGER on_auth_user_created
 
 ## Row Level Security (RLS)
 
-### profiles
-
-```sql
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own profile"
-ON profiles FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile"
-ON profiles FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert own profile"
-ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
-```
-
-### locations
-
-```sql
-ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage own locations"
-ON locations FOR ALL USING (auth.uid() = user_id);
-```
-
-### crops
-
-```sql
-ALTER TABLE crops ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Anyone can read crops"
-ON crops FOR SELECT USING (true);
-```
-
-### recommendations
-
-```sql
-ALTER TABLE recommendations ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage own recommendations"
-ON recommendations FOR ALL USING (auth.uid() = user_id);
-```
+| Tabla | Policy | Permiso |
+| --- | --- | --- |
+| profiles | Users can view own profile | SELECT (propio) |
+| profiles | Users can update own profile | UPDATE (propio) |
+| profiles | Users can insert own profile | INSERT (propio) |
+| locations | Users manage own locations | ALL (propio) |
+| location_environment_profiles | Users view own location profiles | SELECT (propio) |
+| crops | Anyone can read crops | SELECT (público) |
+| crop_images | Anyone can read crop images | SELECT (público) |
+| crop_koppen_preferences | Anyone can read koppen preferences | SELECT (público) |
+| crop_management_factors | Anyone can read management factors | SELECT (público) |
+| location_crop_recommendations | Users manage own recommendations | ALL (propio) |
 
 ## Edge Functions
 
 ### get-crops
 
-Obtiene catálogo de cultivos.
+Obtiene catálogo completo de cultivos con imágenes y factores.
 
-```typescript
-// supabase/functions/get-crops/index.ts
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+**URL:** `https://lzbnowumqugdgupxupur.supabase.co/functions/v1/get-crops`
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+**Método:** GET
+
+**Respuesta:**
+
+```json
+{
+  "crops": [
+    {
+      "id": "uuid",
+      "name": "Tomate",
+      "slug": "tomate",
+      "difficulty": "beginner",
+      "min_harvest_days": 60,
+      "max_harvest_days": 90,
+      "ideal_temp_min_c": 18,
+      "ideal_temp_max_c": 27,
+      "images_list": [...],
+      "koppen_preferences": [...],
+      "management_factors": [...]
+    }
+  ],
+  "count": 10
 }
-
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    const { data: crops, error } = await supabase
-      .from('crops')
-      .select('*')
-      .order('name')
-
-    if (error) throw error
-
-    return new Response(JSON.stringify({ crops }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
-})
 ```
 
 ### get-recommendations
 
-Calcula recomendaciones para una ubicación.
+Calcula recomendaciones para una ubicación específica.
 
-```typescript
-// supabase/functions/get-recommendations/index.ts
-// Ver documento de Edge Function para lógica completa
+**URL:** `https://lzbnowumqugdgupxupur.supabase.co/functions/v1/get-recommendations`
+
+**Método:** POST
+
+**Input:**
+
+```json
+{
+  "location_id": "uuid-de-la-ubicación"
+}
+```
+
+**Lógica del score:**
+
+| Factor | Puntos | Descripción |
+| --- | --- | --- |
+| Temperatura | 0-25 | Diferencia entre temp promedio y rango ideal del cultivo |
+| Altitud | 0-25 | Si la altitud está dentro del rango del cultivo |
+| Köppen | 0-25 | Si la clasificación es compatible |
+| Agua | 0-15 | Requerimiento vs temporada actual |
+| Base | 10 | Score base |
+
+**Niveles:**
+
+| Level | Score |
+| --- | --- |
+| highly_recommended | 80-100 |
+| recommended | 60-79 |
+| possible | 40-59 |
+| not_recommended | 0-39 |
+
+**Respuesta:**
+
+```json
+{
+  "location_id": "uuid",
+  "recommendations": [
+    {
+      "crop_id": "uuid",
+      "crop_name": "Tomate",
+      "crop_slug": "tomate",
+      "difficulty": "beginner",
+      "min_harvest_days": 60,
+      "max_harvest_days": 90,
+      "score": 95,
+      "recommendation_level": "highly_recommended",
+      "explanation": "Compatible: temperatura ideal (24°C), altitud adecuada (450m), clima Köppen Aw compatible.",
+      "rank": 1
+    }
+  ],
+  "count": 10
+}
 ```
 
 ## Variables De Entorno
 
 ### Supabase
 
-- `SUPABASE_URL`: URL del proyecto
-- `SUPABASE_ANON_KEY`: clave pública
+- `SUPABASE_URL`: `https://lzbnowumqugdgupxupur.supabase.co`
+- `SUPABASE_ANON_KEY`: clave pública (en Dashboard)
 - `SUPABASE_SERVICE_ROLE_KEY`: clave de servicio (solo servidor)
 
-### Flutter
+### Flutter (.env)
 
 ```yaml
-# .env
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=eyJxxx
+SUPABASE_URL: https://lzbnowumqugdgupxupur.supabase.co
+SUPABASE_ANON_KEY: eyJxxx
+```
+
+## Flujo de Datos
+
+```
+Flutter App                    Supabase
+───────────────────────       ──────────────────────────────
+1. Usuario selecciona punto
+   en el mapa
+                             
+2. Flutter llama APIs       →   (geocoding, clima, elevación)
+   externas (no Supabase)
+                             
+3. Flutter guarda         →    locations (coords)
+   ubicación              →    location_environment_profiles (climate)
+                             
+4. Flutter llama        →    Edge Function: get-recommendations
+   recomendaciones           Input: { location_id }
+   
+5. Recibe ◀───────────       Recomendaciones con scores
 ```
 
 ## Consideraciones De Seguridad
 
 1. **Nunca exponer service_role key** en Flutter.
-2. **RLS siempre habilitado** en tablas expuestas.
-3. **Validar usuario** en Edge Functions con JWT.
+2. **RLS siempre habilitado** en todas las tablas.
+3. **JWT verify** off en Edge Functions (público por ahora).
 4. **app_metadata** para autorizaciones, no user_metadata.
-5. **Actualizar JWT expiry** para sesiones sensibles.
+5. **JWT expiry** 3600 segundos (1 hora).
+6. **Storage** bucket crops con política optimizada (no listar todo).
+7. **Índices** en foreign keys para performance.
 
 ## Vacíos O Pendientes
 
-- Datos iniciales de cultivos (por poblar).
-- APIs externas integradas en Flutter no afectan schema.
-- Exact config de Google Auth en Supabase Dashboard.
-- Testing de Edge Functions en staging.
+- **Google Auth**: Pendiente de configurar en Dashboard.
+- **JWT Expiry**: ✅ Configurado (3600s).
+- **Bucket Security**: ✅ Optimizado (política por path).
+- **RLS Performance**: ✅ Optimizado (SELECT auth.uid).
+- **Índices**: ✅ Creados en FKs.
+- **Datos iniciales de cultivos**: Por poblar.
+- **Testing**: Edge Functions en staging.
 
 ## Historial
 
 | Fecha | Cambio | Responsable |
 | --- | --- | --- |
 | 2026-04-26 | Creación del contexto backend Supabase MVP | opencode |
+| 2026-04-27 | Actualización con nuevo schema, Storage y Edge Functions | opencode |
+| 2026-04-27 | Optimizaciones: RLS, índices, bucket security | opencode |
+| 2026-04-27 | Optimizaciones: RLS, índices, bucket security | opencode |
